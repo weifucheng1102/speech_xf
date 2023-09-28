@@ -199,9 +199,9 @@ public class SpeechXfPlugin implements FlutterPlugin, MethodCallHandler, Activit
           return;
         }
         try {
-          String fileName = call.argument("path");
-          String key = FlutterMain.getLookupKeyForAsset("assets/" + fileName); // 获取 assets 中文件的 key
-          InputStream open = mContext.getAssets().open(key);
+          String filePath = call.argument("path");
+          // String key = FlutterMain.getLookupKeyForAsset("assets/" + fileName); // 获取 assets 中文件的 key
+          InputStream open = mContext.getAssets().open(filePath);
           byte[] buff = new byte[1280];
           while (open.available() > 0) {
             int read = open.read(buff);

@@ -29,15 +29,15 @@ NSString *pcmFilePath = @"";
             binaryMessenger:[registrar messenger]];
   SpeechXfPlugin* instance = [[SpeechXfPlugin alloc] init];
   [registrar addMethodCallDelegate:instance channel:channel];
-  
+
     FlutterEventChannel *iatEventChanel = [FlutterEventChannel eventChannelWithName:@"xf_speech_to_text_stream" binaryMessenger:[registrar messenger]];
     streamInstance = [SpeechXfStream sharedInstance];
     [iatEventChanel setStreamHandler:[streamInstance iatStreamHandler]];
-    
+
     FlutterEventChannel *ttsEventChanel = [FlutterEventChannel eventChannelWithName:@"xf_text_to_speech_stream" binaryMessenger:[registrar messenger]];
     ttsStreamInstance = [SpeechTtsStream sharedInstance];
     [ttsEventChanel setStreamHandler:[ttsStreamInstance ttsStreamHandler]];
-    
+
     FlutterEventChannel *volumeEventChanel = [FlutterEventChannel eventChannelWithName:@"volume_stream" binaryMessenger:[registrar messenger]];
     volumeStreamInstance = [SpeechVolumeStream sharedInstance];
     [volumeEventChanel setStreamHandler:[volumeStreamInstance volumeStreamHandler]];
@@ -45,7 +45,7 @@ NSString *pcmFilePath = @"";
 
 
 - (void)handleMethodCall:(FlutterMethodCall*)call result:(FlutterResult)result {
-    
+
 
     if ([@"init" isEqualToString:call.method]){
         //初始化SDK
@@ -122,20 +122,20 @@ NSString *pcmFilePath = @"";
  * 开启带内置UI的语音听写
  */
 - (void) openNativeUiDialog:(NSDictionary*) args {
-    
+
     //带UI的识别单例
     if (_iflyRecognizerView == nil) {
         _iflyRecognizerView= [[IFlyRecognizerView alloc] initWithCenter:[UIApplication sharedApplication].keyWindow.center];
     }
-        
+
     //清除参数
     [_iflyRecognizerView setParameter:@"" forKey:[IFlySpeechConstant PARAMS]];
-        
+
     //设置语音识别结果应用为普通文本领域
     [_iflyRecognizerView setParameter:@"iat" forKey:[IFlySpeechConstant IFLY_DOMAIN]];
 
     _iflyRecognizerView.delegate = self;
-    
+
     if (_iflyRecognizerView != nil) {
         NSString *language = args[@"language"];
         NSString *vadBos = args[@"vadBos"];
@@ -168,13 +168,13 @@ NSString *pcmFilePath = @"";
 - (void) uploadUserWords:(NSDictionary*) args {
     [_iFlySpeechRecognizer stopListening];
     NSString *userwords = args[@"contents"];
-    
+
     _uploader = [[IFlyDataUploader alloc] init];
     [_uploader setParameter:@"uup" forKey:[IFlySpeechConstant SUBJECT]];
     [_uploader setParameter:@"userword" forKey:[IFlySpeechConstant DATA_TYPE]];
-    
+
     IFlyUserWords *iFlyUserWords = [[IFlyUserWords alloc] initWithJson:userwords];
-    
+
     [_uploader uploadDataWithCompletionHandler:
      ^(NSString * grammerID, IFlySpeechError *error)
     {
@@ -192,18 +192,18 @@ NSString *pcmFilePath = @"";
  */
 - (void)startListening :(NSDictionary*) args{
     [self initRecognizer : (NSDictionary*) args];
-    
+
     [_iFlySpeechRecognizer cancel];
-    
+
     //Set microphone as audi`o source
     [_iFlySpeechRecognizer setParameter:IFLY_AUDIO_SOURCE_MIC forKey:@"audio_source"];
-    
+
     //Set result type
     [_iFlySpeechRecognizer setParameter:@"json" forKey:[IFlySpeechConstant RESULT_TYPE]];
-    
+
     //保存录音文件
     [_iFlySpeechRecognizer setParameter:@"asr.pcm" forKey:[IFlySpeechConstant ASR_AUDIO_PATH]];
-    
+
     [_iFlySpeechRecognizer setDelegate:self];
     BOOL ret =  [_iFlySpeechRecognizer startListening];
     if(!ret){
@@ -224,14 +224,13 @@ NSString *pcmFilePath = @"";
     [_iFlySpeechRecognizer setDelegate:self];
     [_iFlySpeechRecognizer setParameter:@"json" forKey:[IFlySpeechConstant RESULT_TYPE]];
     [_iFlySpeechRecognizer setParameter:IFLY_AUDIO_SOURCE_STREAM forKey:@"audio_source"];    //设置音频为外部来源
-    
+
     //开始语音识别
     BOOL ret  = [_iFlySpeechRecognizer startListening];
     if (ret) {
         //从flutter端获取音频文件
         NSString *pcmFileName = args[@"path"];
-        NSString* key = [flutterPluginRegistrar lookupKeyForAsset:[@"assets/" stringByAppendingString:pcmFileName]];
-        pcmFilePath = [[NSBundle mainBundle] pathForResource:key ofType:nil];
+        pcmFilePath = pcmFileName;
 
         //初始化录音环境,主要用于识别录音器。
         [IFlyAudioSession initRecordingAudioSession];
@@ -243,6 +242,8 @@ NSString *pcmFilePath = @"";
         NSLog(@"%s[OUT],Success,Recorder ret=%d",__func__,pcmRet);
     } else {
         NSLog(@"%s[OUT],语音识别失败",__func__);
+        [_iFlySpeechRecognizer stopListening];
+        [_pcmRecorder stop];
     }
 }
 
@@ -256,21 +257,21 @@ NSString *pcmFilePath = @"";
     if (_iFlySpeechRecognizer == nil) {
         _iFlySpeechRecognizer = [IFlySpeechRecognizer sharedInstance];
     }
-        
+
     //清除参数
     [_iFlySpeechRecognizer setParameter:@"" forKey:[IFlySpeechConstant PARAMS]];
-        
+
     //设置听写模式
     [_iFlySpeechRecognizer setParameter:@"iat" forKey:[IFlySpeechConstant IFLY_DOMAIN]];
-    
+
     _iFlySpeechRecognizer.delegate = self;
-        
+
     if (_iFlySpeechRecognizer != nil) {
         NSString *language = args[@"language"];
         NSString *vadBos = args[@"vadBos"];
         NSString *vadEos = args[@"vadEos"];
         NSString *ptt = args[@"ptt"];
-        
+
         IATConfig *instance = [IATConfig sharedInstance];
         if (language == nil){
             language = @"zh_cn";
@@ -284,7 +285,7 @@ NSString *pcmFilePath = @"";
         if(ptt == nil){
             ptt = instance.dot;
         }
-        
+
         //设置最长录音时间
         [_iFlySpeechRecognizer setParameter:@"30000" forKey:[IFlySpeechConstant SPEECH_TIMEOUT]];
         //设置后端点检测时间
@@ -353,7 +354,7 @@ NSString *pcmFilePath = @"";
     if (instance == nil) {
         return;
     }
-    
+
     NSString *volume = args[@"volume"];
     NSString *pitch = args[@"pitch"];
     NSString *speed = args[@"speed"];
@@ -363,30 +364,30 @@ NSString *pcmFilePath = @"";
     if (_iFlySpeechSynthesizer == nil) {
         _iFlySpeechSynthesizer = [IFlySpeechSynthesizer sharedInstance];
     }
-    
+
     _iFlySpeechSynthesizer.delegate = self;
-    
+
     [_iFlySpeechSynthesizer setParameter:@"" forKey:[IFlySpeechConstant PARAMS]];
-    
+
     //设置在线工作方式
     [_iFlySpeechSynthesizer setParameter:[IFlySpeechConstant TYPE_CLOUD] forKey:[IFlySpeechConstant ENGINE_TYPE]];
 
     //设置音量，取值范围 0~100
     [_iFlySpeechSynthesizer setParameter:volume forKey:[IFlySpeechConstant VOLUME]];
-    
+
     //音调，范围（0~100）
     [_iFlySpeechSynthesizer setParameter:pitch forKey:[IFlySpeechConstant PITCH]];
-    
+
     //语速
     [_iFlySpeechSynthesizer setParameter:speed forKey:[IFlySpeechConstant SPEED]];
-    
+
     //发音人，默认为”xiaoyan”，可以设置的参数列表可参考“合成发音人列表”
     [_iFlySpeechSynthesizer setParameter:voiceName forKey: [IFlySpeechConstant VOICE_NAME]];
     NSLog(@"发音人：%@",instance.vcnName);
-    
+
     //合成、识别、唤醒、评测、声纹等业务采样率。
     [_iFlySpeechSynthesizer setParameter:@"16000" forKey:[IFlySpeechConstant SAMPLE_RATE]];
-    
+
     //保存合成文件名，如不再需要，设置为nil或者为空表示取消，默认目录位于library/cache下
     [_iFlySpeechSynthesizer setParameter:@" tts.pcm" forKey: nil];
 
@@ -402,17 +403,17 @@ NSString *pcmFilePath = @"";
     if (results != nil){
         NSMutableString *resultString = [[NSMutableString alloc] init];
         NSDictionary *dic = [results objectAtIndex:0];
-            
+
         for (NSString *key in dic) {
             [resultString appendFormat:@"%@",key];
         }
-        
+
         NSString * resultFromJson =  nil;
-            
+
         resultFromJson = [ISRDataHelper stringFromJson:resultString];
-            
+
         NSLog(@"resultFromJson=%@",resultFromJson);
-        
+
         NSMutableDictionary *resdic = [NSMutableDictionary dictionaryWithCapacity:1];
         [resdic setObject: [NSNumber numberWithBool:YES] forKey:@"success"];
         [resdic setObject: [NSNumber numberWithBool:isLast] forKey:@"isLast"];
@@ -434,7 +435,7 @@ NSString *pcmFilePath = @"";
             return;
         }
         text = [NSString stringWithFormat:@"Error：%d %@", error.errorCode,error.errorDesc];
-       
+
         NSMutableDictionary *resdic = [NSMutableDictionary dictionaryWithCapacity:1];
         [resdic setObject: [NSNumber numberWithBool:NO] forKey:@"success"];
         [resdic setObject:@"" forKey:@"result"];
@@ -495,7 +496,7 @@ NSString *pcmFilePath = @"";
  * 缓冲进度
  */
 - (void)onBufferProgress:(int)progress message:(NSString *)msg{
-    
+
 }
 
 /**
@@ -509,7 +510,7 @@ NSString *pcmFilePath = @"";
 
 
 - (void)onIFlyRecorderBuffer:(const void *)buffer bufferSize:(int)size {
-    
+
     NSData *fullAudioData = [NSData dataWithContentsOfFile:pcmFilePath]; // 从文件中读取完整的音频数据
     NSInteger totalLength = fullAudioData.length;
     NSInteger segmentLength = 1024; // 定义每个片段的长度，这里使用 1024 字节作为示例
@@ -527,6 +528,7 @@ NSString *pcmFilePath = @"";
 
 - (void)onIFlyRecorderError:(IFlyPcmRecorder *)recoder theError:(int)error {
     NSLog(@"error");
+    [self.iFlySpeechRecognizer stopListening];
 }
 
 @end
