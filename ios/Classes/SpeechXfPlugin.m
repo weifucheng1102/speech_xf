@@ -233,17 +233,30 @@ NSString *pcmFilePath = @"";
         pcmFilePath = pcmFileName;
 
         //初始化录音环境,主要用于识别录音器。
-        [IFlyAudioSession initRecordingAudioSession];
+        // [IFlyAudioSession initRecordingAudioSession];
 
-        _pcmRecorder.delegate = self;
+        // _pcmRecorder.delegate = self;
+
+        NSData *fullAudioData = [NSData dataWithContentsOfFile:pcmFilePath]; // 从文件中读取完整的音频数据
+        NSInteger totalLength = fullAudioData.length;
+        NSInteger segmentLength = 1024; // 定义每个片段的长度，这里使用 1024 字节作为示例
+
+        for (NSInteger offset = 0; offset < totalLength; offset += segmentLength) {
+            NSInteger length = MIN(segmentLength, totalLength - offset);
+            NSData *segmentData = [fullAudioData subdataWithRange:NSMakeRange(offset, length)];
+            [_iFlySpeechRecognizer writeAudio:segmentData];
+        }
 
         //开始录制
-        BOOL pcmRet = [_pcmRecorder start];
-        NSLog(@"%s[OUT],Success,Recorder ret=%d",__func__,pcmRet);
+        // BOOL pcmRet = [_pcmRecorder start];
+        NSLog(@"%s[OUT],Success,Recorder ret=%d",__func__);
+
+        // 音频数据写入结束时调用 stopListening 方法
+        [_iFlySpeechRecognizer stopListening];
     } else {
         NSLog(@"%s[OUT],语音识别失败",__func__);
         [_iFlySpeechRecognizer stopListening];
-        [_pcmRecorder stop];
+        // [_pcmRecorder stop];
     }
 }
 
