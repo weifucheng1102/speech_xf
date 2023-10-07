@@ -232,6 +232,8 @@ NSString *pcmFilePath = @"";
         NSString *pcmFileName = args[@"path"];
         pcmFilePath = pcmFileName;
 
+        NSLog(@"%s[OUT],Success, audioRecognizer filePath: %s",__func__, pcmFilePath);
+
         //初始化录音环境,主要用于识别录音器。
         // [IFlyAudioSession initRecordingAudioSession];
 
@@ -241,6 +243,8 @@ NSString *pcmFilePath = @"";
         NSInteger totalLength = fullAudioData.length;
         NSInteger segmentLength = 1024; // 定义每个片段的长度，这里使用 1024 字节作为示例
 
+        NSLog(@"%s[OUT],Success, audioRecognizer fileTotalLength: %ld",__func__, totalLength);
+
         for (NSInteger offset = 0; offset < totalLength; offset += segmentLength) {
             NSInteger length = MIN(segmentLength, totalLength - offset);
             NSData *segmentData = [fullAudioData subdataWithRange:NSMakeRange(offset, length)];
@@ -249,7 +253,7 @@ NSString *pcmFilePath = @"";
 
         //开始录制
         // BOOL pcmRet = [_pcmRecorder start];
-        NSLog(@"%s[OUT],Success,Recorder ret=%d",__func__);
+        NSLog(@"%s[OUT],Success, audioRecognizer",__func__);
 
         // 音频数据写入结束时调用 stopListening 方法
         [_iFlySpeechRecognizer stopListening];
@@ -431,6 +435,12 @@ NSString *pcmFilePath = @"";
         [resdic setObject: [NSNumber numberWithBool:YES] forKey:@"success"];
         [resdic setObject: [NSNumber numberWithBool:isLast] forKey:@"isLast"];
         [resdic setObject:resultFromJson forKey:@"result"];
+        [streamInstance iatStreamHandler].iatEventSink(resdic);
+    } else {
+        NSMutableDictionary *resdic = [NSMutableDictionary dictionaryWithCapacity:1];
+        [resdic setObject: [NSNumber numberWithBool:NO] forKey:@"success"];
+        [resdic setObject: [NSNumber numberWithBool:isLast] forKey:@"isLast"];
+        [resdic setObject:@"" forKey:@"result"];
         [streamInstance iatStreamHandler].iatEventSink(resdic);
     }
 }
