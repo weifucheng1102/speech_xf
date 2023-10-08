@@ -201,12 +201,18 @@ public class SpeechXfPlugin implements FlutterPlugin, MethodCallHandler, Activit
         try {
           String filePath = call.argument("path");
           // String key = FlutterMain.getLookupKeyForAsset("assets/" + fileName); // 获取 assets 中文件的 key
-          InputStream open = mContext.getAssets().open(filePath);
+          // mContext.getExternalFilesDir().open(filePath);
+          // InputStream open = mContext.getAssets().open(filePath);
+          Log.d(TAG, "audio_recognizer filePath: " + filePath);
+          File file = new File(filePath);
+          FileInputStream fis = new FileInputStream(file);
           byte[] buff = new byte[1280];
-          while (open.available() > 0) {
-            int read = open.read(buff);
-            mIat.writeAudio(buff, 0, read);
+          int bytesRead = fis.read(buff);
+          while (bytesRead != -1) {
+            mIat.writeAudio(buff, 0, bytesRead);
+            bytesRead = open.read(buff);
           }
+          fis.close();
           mIat.stopListening();
         } catch (IOException e) {
           mIat.cancel();
