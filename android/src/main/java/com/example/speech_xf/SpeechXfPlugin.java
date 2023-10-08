@@ -194,6 +194,8 @@ public class SpeechXfPlugin implements FlutterPlugin, MethodCallHandler, Activit
         setParam();
         // 设置音频来源为外部文件
         mIat.setParameter(SpeechConstant.AUDIO_SOURCE, "-1");
+        mIat.setParameter(SpeechConstant.RESULT_TYPE, "json");
+
         ret = mIat.startListening(mRecognizerListener);
         if (ret != ErrorCode.SUCCESS) {
           showTip("识别失败,错误码：" + ret + ",请点击网址https://www.xfyun.cn/document/error-code查询解决方案");
@@ -360,7 +362,9 @@ public class SpeechXfPlugin implements FlutterPlugin, MethodCallHandler, Activit
       HashMap<String, Object> map = new HashMap<>();
       map.put("volume", volume);
       map.put("data", data);
-      volumeEventSink.success(map);
+      if (volumeEventSink != null) {
+        volumeEventSink.success(map);
+      }
     }
 
     @Override
