@@ -211,7 +211,7 @@ public class SpeechXfPlugin implements FlutterPlugin, MethodCallHandler, Activit
           int bytesRead = fis.read(buff);
           while (bytesRead != -1) {
             mIat.writeAudio(buff, 0, bytesRead);
-            bytesRead = open.read(buff);
+            bytesRead = fis.read(buff);
           }
           fis.close();
           mIat.stopListening();
