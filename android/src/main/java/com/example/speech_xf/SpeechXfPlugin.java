@@ -191,7 +191,7 @@ public class SpeechXfPlugin implements FlutterPlugin, MethodCallHandler, Activit
           mIat = SpeechRecognizer.createRecognizer(mContext, mInitListener);
         }
         // 设置参数
-        setParam();
+        // setParam();
         // 设置音频来源为外部文件
         mIat.setParameter(SpeechConstant.AUDIO_SOURCE, "-1");
         mIat.setParameter(SpeechConstant.RESULT_TYPE, "json");
